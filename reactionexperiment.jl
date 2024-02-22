@@ -25,11 +25,6 @@ function KLE_multi_index_setup(inputDim, outputDim, minOrder, firstOrders)
 end
 
 function SchloeglNetwork(k_1=3e-7, k_2=1e-4, k_3=1e-3, k_4=3.5, A=1e5, B=2e5)
-    a1(_k1,_A,_X) = _k1*_A*_X*(_X-1)/2
-    a2(_k2,_X) = _k2*_X*(_X-1)*(_X-2)/6
-    a3(_k3,_B) = _k3*_B
-    a4(_k4,_X) = _k4*_X
-
     schloegl = @reaction_network begin
         @species X(t)
         @parameters _k_1=$k_1 _k_2=$k_2 _k_3=$k_3 _k_4=$k_4 _A=$A [isconstantspecies=true] _B=$B [isconstantspecies=true]
