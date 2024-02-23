@@ -11,6 +11,8 @@ create_default_centers = TO-> [-3; 3; reduce(vcat, default_centers.(1:TO))]
 module TimingEnums
     @enum MapType MVE=1 RMVE=2 Integrand=3
     @enum EvalType Evaluate=1 Inverse=2 Gradient=3
+    MapTypeToString = string.(instances(MapType))
+    EvalTypeToString = string.(instances(EvalType))
 end
 
 # Define types to evaluate the correct function for fixed samples
@@ -53,17 +55,25 @@ function (e::GradientFix)(f)
     Gradient(f, e.samples, e.sense)
 end
 
+function CreateFixedMsets(in_dim, max_order)
+    total_fmset = MParT.CreateMarginalOrder(in_dim, max_order, -1)
+    off_fmset = MParT.CreateMarginalOrder(in_dim-1, max_order, -1)
+    diag_fmset = MParT.CreateMarginalOrder(in_dim, max_order, in_dim-1)
+    (off_fmset, diag_fmset, total_fmset)
+end
+
 # Create the types of maps we're interested in
-function CreateMaps(in_dim, out_dim, total_order, opts)
-    fmset = FixedMultiIndexSet(in_dim, total_order)
-    comp = CreateComponent(fmset, opts)
-    mve = MParT.CreateExpansion(out_dim, fmset, opts)
+function CreateMaps(in_dim, max_order, opts)
+    OUT_DIM = 1 # We're only interested in scalar outputs
+
+    off_fmset, diag_fmset, total_fmset = CreateFixedMsets(in_dim, max_order)
+
+    comp = CreateComponent(total_fmset, opts)
+    mve = MParT.CreateExpansion(OUT_DIM, total_fmset, opts)
 
     ## Create sigmoid component
-    fmset_off = FixedMultiIndexSet(in_dim-1, total_order)
-    fmset_diag = Fix(MParT.CreateNonzeroDiagTotalOrder(in_dim, total_order))
-    centers = create_default_centers(total_order)
-    sig_comp = MParT.CreateSigmoidComponent(fmset_off, fmset_diag, centers, opts)
+    centers = create_default_centers(max_order)
+    sig_comp = MParT.CreateSigmoidComponent(off_fmset, diag_fmset, centers, opts)
 
     ## Create maps vector
     all_maps = Vector(undef, length(instances(TimingEnums.MapType)))
@@ -75,9 +85,11 @@ end
 
 function CreateBenchmarks(rng, in_dim, sample_grid, all_maps)
 
-    benchmarks = Array{Float64,3}(undef, length(instances(TimingEnums.MapType)), length(instances(TimingEnums.EvalType)), length(sample_grid))
-
-    prog = Progress(sum(sample_grid)*length(all_maps)*length(instances(TimingEnums.EvalType)), 1, "Benchmarking...")
+    benchmark_size = (length(instances(TimingEnums.MapType)), length(instances(TimingEnums.EvalType)), length(sample_grid))
+    benchmarks = Array{Float64,3}(undef, benchmark_size...)
+    numIter = sum(sample_grid)*length(all_maps)*length(instances(TimingEnums.EvalType))
+    numIter -= sum(sample_grid) # We don't want to benchmark the Inverse function for the MVE map
+    prog = Progress(numIter, 1, "Benchmarking...")
 
     for (i, map_bench) in enumerate(all_maps)
         for (j, eval) in enumerate(instances(TimingEnums.EvalType))
@@ -120,21 +132,21 @@ function PlotBenchmarks(sample_grid, benchmarks; cols = Makie.wong_colors(), plo
     fig
 end
 
-function example_sample_benchmark()
-    in_dim = 10
-    out_dim = 1
-    total_order = 4
-    sample_grid = round.(Int, 10 .^ (2:0.33:4.5))
+function example_sample_benchmark(in_dim=10000, max_order=20, sample_grid = round.(Int, 10 .^ (2:0.33:4)))
     rng = Xoshiro(2048202)
     opts = MapOptions(basisType="HermiteFunctions", basisLB=-3, basisUB=3)
-    all_maps = CreateMaps(in_dim, out_dim, total_order, opts)
+    all_maps = CreateMaps(in_dim, max_order, opts)
     benchmarks = CreateBenchmarks(rng, in_dim, sample_grid, all_maps)
-    benchmarks_dict = Dict((string(instances(TimingEnums.MapType)[idx[1]]), string(instances(TimingEnums.EvalType)[idx[2]]), sample_grid[idx[3]])=>(benchmarks[idx]) for idx in CartesianIndices(benchmarks))
-    @save "data/sample_benchmarks.jld2" sample_grid benchmarks benchmarks_dict
+    benchmark_keys = [(TimingEnums.MapTypeToString[idx[1]],
+                       TimingEnums.EvalTypeToString[idx[2]],
+                       sample_grid[idx[3]]) for idx in CartesianIndices(benchmarks)]
+    benchmarks_dict = Dict(key=>val for (key, val) in zip(benchmark_keys, benchmarks))
+    map_num_coeffs = numCoeffs.(all_maps)
+    @save "data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
 end
 
 ##
-@load "data/sample_benchmarks.jld2" sample_grid benchmarks benchmarks_dict
+@load "data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
 PlotBenchmarks(sample_grid, benchmarks, plot_filename="figs/benchmarks.pdf")
 
 ##

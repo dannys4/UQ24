@@ -37,12 +37,10 @@ function Base.show(io::IO, m::MultiIndex)
     print(io, string(m))
 end
 
-function Base.show(io::IO, m::MultiIndexSet)
-    for j in 1:Size(m)
-        println(io, m[j])
-    end
-end
-
 function Base.collect(mset::MultiIndexSet)
     reduce(vcat, Int.(vec(mset[j]))' for j in 1:Size(mset))
+end
+
+function Base.show(io::IO, m::MIME"text/plain", mset::MultiIndexSet)
+    show(io, m, collect(mset))
 end
