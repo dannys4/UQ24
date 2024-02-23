@@ -34,7 +34,7 @@ function PlotRealizations(samples::Matrix{Float64}; tgrid=0.1:0.1:20., num_traj 
     hidedecorations!(ax_real, label=false, ticks=false, ticklabels=false)
     hidespines!(ax_real, :t,:r)
 
-    save_plot && save("figs/realizations.pdf", fig_real)
+    save_plot && save("../figs/realizations.pdf", fig_real)
     display(fig_real)
     fig_real
 end
@@ -68,7 +68,7 @@ function Generate2dPullbackPlot(samples, rng, verbose, N_train=nothing, maxOrder
     hidespines!(ax, :t,:r)
     axislegend(ax, position=:rb, backgroundcolor=(:white,0))
     display(fig)
-    save_plot && save("figs/pullback_2d.pdf", fig)
+    save_plot && save("../figs/pullback_2d.pdf", fig)
 
     trimap, fig
 end
@@ -80,7 +80,7 @@ function PullbackScattermat(trimap, rng, verbose, save_plot=save_plots, N_test=1
     fig = scattermat(pullback_samps[1:N_plot_modes,:])
     display(fig)
     verbose && wait_for_key()
-    save_plot && save("figs/pullback_scattermat.pdf", fig)
+    save_plot && save("../figs/pullback_scattermat.pdf", fig)
     fig
 end
 
@@ -126,7 +126,7 @@ function Plot2dConditionalPullback(Z, pullback_samps, Z_real, comps=(1,2), save_
     hidedecorations!(ax)
     hidespines!(ax)
     display(fig)
-    save_plot && save("figs/conditional_pullback_2d.pdf", fig)
+    save_plot && save("../figs/conditional_pullback_2d.pdf", fig)
     fig
 end
 
@@ -156,7 +156,7 @@ function PlotConditionalPullback(rngs, schloegl, kle, Z_samples, trimap, sample_
     hidedecorations!(ax, label=false, ticks=false, ticklabels=false)
     hidespines!(ax, :t,:r)
     display(fig_cond_traj)
-    save_plot && save("figs/conditional_realizations.pdf", fig_cond_traj)
+    save_plot && save("../figs/conditional_realizations.pdf", fig_cond_traj)
     fig_2d, fig_cond_traj
 end
 
@@ -171,7 +171,7 @@ function reaction_experiment(verbose=true)
 
     samples_scatter = scattermat(Z_samples[1:8,:])
     display(samples_scatter)
-    save_plots && save("figs/samples_scatter.pdf", samples_scatter)
+    save_plots && save("../figs/samples_scatter.pdf", samples_scatter)
     verbose && wait_for_key()
 
     Generate2dPullbackPlot(Z_samples, rngs[1], verbose)

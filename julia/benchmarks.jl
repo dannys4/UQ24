@@ -142,11 +142,11 @@ function example_sample_benchmark(in_dim=10000, max_order=20, sample_grid = roun
                        sample_grid[idx[3]]) for idx in CartesianIndices(benchmarks)]
     benchmarks_dict = Dict(key=>val for (key, val) in zip(benchmark_keys, benchmarks))
     map_num_coeffs = numCoeffs.(all_maps)
-    @save "data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
+    @save "../data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
 end
 
 ##
-@load "data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
-PlotBenchmarks(sample_grid, benchmarks, plot_filename="figs/benchmarks.pdf")
+@load "../data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
+PlotBenchmarks(sample_grid, benchmarks, plot_filename="../figs/benchmarks.pdf")
 
 ##
