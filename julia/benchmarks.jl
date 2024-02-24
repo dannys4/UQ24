@@ -1,4 +1,4 @@
-using MParT, BenchmarkTools, CairoMakie, Random, SpecialFunctions, CxxWrap, ProgressMeter, JLD2
+using MParT, BenchmarkTools, CairoMakie, Random, SpecialFunctions, CxxWrap, ProgressMeter, JLD2, Colors
 # Define the inverse of the normal cumulative distribution function
 invnormcdf(q) = sqrt(2)*erfinv(2*q-1)
 
@@ -107,32 +107,46 @@ function CreateBenchmarks(rng, in_dim, sample_grid, all_maps)
 end
 
 function PlotBenchmarks(sample_grid, benchmarks; cols = Makie.wong_colors(), plot_filename=nothing)
-    fig = Figure()
+    fig = Figure(backgroundcolor=(:white,0))
     markers = [:circle, :xcross, :diamond]
+    markersizes = [13, 20, 13]
     linestyles = [:solid, :dash, :dot]
-    ax = Axis(fig[1,1], xlabel="Number of samples", ylabel="Time (s)", xscale=log10, yscale=log10)
-    line_elems = [LineElement(color=cols[i], linestyle=linestyles[i], linewidth=3) for i in 1:length(instances(TimingEnums.MapType))]
-    scatter_elems = [MarkerElement(marker=markers[j], color=:black, markersize=13) for j in 1:length(instances(TimingEnums.EvalType))]
-    all_elems = [line_elems; scatter_elems]
-    all_labels = [string.(instances(TimingEnums.MapType))..., string.(instances(TimingEnums.EvalType))...]
-
+    xticks = 10 .^ (2:4)
+    ax = Axis(fig[1,1], backgroundcolor=(:white,0), xticks=xticks, xlabel="Number of samples", ylabel="Time (s)", xscale=log10, yscale=log10)
+    line_elems = [LineElement(color=cols[i], linestyle=linestyles[i], linewidth=3) for i in eachindex(TimingEnums.MapTypeToString)]
+    scatter_elems = [MarkerElement(marker=markers[j], color=:black, markersize=markersizes[j]) for j in eachindex(TimingEnums.EvalTypeToString)]
+    all_elems = [line_elems, scatter_elems]
+    all_labels = [[TimingEnums.MapTypeToString...], [TimingEnums.EvalTypeToString...]]
+    ylims!(ax, (1e-4, 2e2))
     for idx in CartesianIndices(benchmarks[:,:,1])
         i, j = Tuple(idx)
         i == Int(TimingEnums.MVE) && j == Int(TimingEnums.Inverse) && continue
-        scatterlines!(ax, sample_grid, benchmarks[i,j,:], marker=markers[j], color=cols[i], linestyle=linestyles[i], linewidth=3, markersize=13)
+        color = cols[i]
+        linewidth = 3
+        marker = markers[j]
+        markersize=markersizes[j]
+        linestyle=linestyles[i]
+        if i == Int(TimingEnums.RMVE) && j == Int(TimingEnums.Inverse)
+            color *= 0.6
+        end
+        scatterlines!(ax, sample_grid, benchmarks[i,j,:];
+            marker, markersize, linestyle, color, linewidth)
     end
-    Legend(
-        fig[1, 1], all_elems, all_labels,
+    leg = Legend(
+        fig[1, 1], all_elems, all_labels, ["Map", "Function"],
         tellheight = false,
         tellwidth = false,
-        margin = (10, 10, 10, 10),
-        halign = :right, valign = :bottom, orientation = :vertical
+        orientation=:horizontal,
+        halign = :right, valign = :bottom,
+        backgroundcolor=(:white,0)
     )
+    leg.nbanks=3
+    leg.titleposition=:top
     isnothing(plot_filename) || save(plot_filename, fig)
     fig
 end
 
-function example_sample_benchmark(in_dim=10000, max_order=20, sample_grid = round.(Int, 10 .^ (2:0.33:4)))
+function example_sample_benchmark(in_dim=1000, max_order=10, sample_grid = round.(Int, 10 .^ (2:0.33:4)))
     rng = Xoshiro(2048202)
     opts = MapOptions(basisType="HermiteFunctions", basisLB=-3, basisUB=3)
     all_maps = CreateMaps(in_dim, max_order, opts)
@@ -145,7 +159,6 @@ function example_sample_benchmark(in_dim=10000, max_order=20, sample_grid = roun
     @save "../data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
 end
 
-##
 @load "../data/sample_benchmarks2.jld2" sample_grid benchmarks benchmarks_dict map_num_coeffs
 PlotBenchmarks(sample_grid, benchmarks, plot_filename="../figs/benchmarks.pdf")
 
