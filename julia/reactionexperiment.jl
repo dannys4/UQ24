@@ -27,7 +27,7 @@ end
 
 function PlotRealizations(samples::Matrix{Float64}; tgrid=0.1:0.1:20., num_traj = 100, save_plot=save_plots, scale=1e-2, opacity=0.35)
     fig_real = Figure(backgroundcolor=(:white,0))
-    ax_real = Axis(fig_real[1,1], backgroundcolor=(:white,0))
+    ax_real = Axis(fig_real[1,1], backgroundcolor=(:white,0), xlabel=L"t", ylabel=L"X(t)")
     for j in 1:min(num_traj, size(samples,2))
         lines!(ax_real, tgrid, samples[:,j] * scale, color = (cols[mod1(j, length(cols))], opacity))
     end
@@ -64,8 +64,8 @@ function Generate2dPullbackPlot(samples, rng, verbose, N_train=nothing, maxOrder
     ax = Axis(fig[1,1], backgroundcolor=(:white,0))
     scatter!(ax, pullback_samps, color=(cols[1], opacity), label="Generated")
     scatter!(ax, z2, color=(cols[2], opacity), label="Out-of-sample")
-    hidedecorations!(ax, label=false, ticks=false, ticklabels=false)
-    hidespines!(ax, :t,:r)
+    hidedecorations!(ax)
+    hidespines!(ax)
     axislegend(ax, position=:rb, backgroundcolor=(:white,0))
     display(fig)
     save_plot && save("../figs/pullback_2d.pdf", fig)
@@ -146,7 +146,7 @@ function PlotConditionalPullback(rngs, schloegl, kle, Z_samples, trimap, sample_
     traj_cond_samps = kle.psi * (kle.lambda .* pullback_samps) .+ kle.mu
 
     fig_cond_traj = Figure(backgroundcolor=(:white,0))
-    ax = Axis(fig_cond_traj[1,1],backgroundcolor=(:white,0))
+    ax = Axis(fig_cond_traj[1,1],backgroundcolor=(:white,0), xlabel=L"t", ylabel=L"X(t)")
     for j in axes(traj_cond_samps,2)
         lines!(ax, tgrid, traj_cond_samps[:,j]./100, color = (cols[mod1(j, length(cols))], 0.35))
     end
@@ -187,4 +187,4 @@ function reaction_experiment(verbose=true)
 end
 
 ##
-reaction_experiment()
+reaction_experiment(false)
