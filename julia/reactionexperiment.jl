@@ -16,6 +16,26 @@ function KLE_create_msets(j::Int, basic_mset::MultiIndexSet, firstOrders::Vector
     Fix(MultiIndexSet(mset_mat))
 end
 
+function plot_KLE(kle::MC_KLE_1d, num_modes=8, save_plot=save_plots)
+    mode_fig = Figure(backgroundcolor=(:white,0))
+    ax = Axis(mode_fig[1,1], backgroundcolor=(:white,0))
+    for j in 1:num_modes
+        lines!(ax, kle.psi[:,j], color = cols[mod1(j, length(cols))], linewidth=3)
+    end
+    hidedecorations!(ax, label=false, ticks=false, ticklabels=false)
+    hidespines!(ax, :t,:r)
+    display(mode_fig)
+    save_plot && save("../figs/KLE_modes.pdf", mode_fig)
+    spectrum_fig = Figure(backgroundcolor=(:white,0))
+    ax = Axis(spectrum_fig[1,1], backgroundcolor=(:white,0), ylabel="Cumulative % Energy", yscale=log10)
+    lam_sum = cumsum(kle.lambda)/sum(kle.lambda)
+    scatter!(ax,lam_sum, color=cols[1])
+    hidedecorations!(ax, label=false, ticks=false, ticklabels=false)
+    display(spectrum_fig)
+    save_plot && save("../figs/KLE_spectrum.pdf", spectrum_fig)
+    mode_fig, spectrum_fig
+end
+
 function KLE_multi_index_setup(inputDim, outputDim, minOrder, firstOrders)
     f_d = length(firstOrders)+1
     basic_mset = CreateTotalOrder(f_d, minOrder)
@@ -168,6 +188,8 @@ function reaction_experiment(verbose=true)
     PlotRealizations(traj_samples)
     verbose && wait_for_key()
     kle, Z_samples = form_KL_MC(traj_samples, n_KL_modes)
+    plot_KLE(kle)
+    verbose && wait_for_key()
 
     samples_scatter = scattermat(Z_samples[1:8,:])
     display(samples_scatter)
@@ -187,4 +209,4 @@ function reaction_experiment(verbose=true)
 end
 
 ##
-reaction_experiment(false)
+reaction_experiment(true)
