@@ -3,3 +3,4 @@ data/*.jld2
 data/*.npy
 figs/*.pdf
 .vscode
+.ipynb_checkpoints
